@@ -1,0 +1,43 @@
+{
+	"sheets": [
+		{
+			"name": "Enemies",
+			"columns": [
+				{
+					"typeStr": "1",
+					"name": "id"
+				},
+				{
+					"typeStr": "1",
+					"name": "EnemyName",
+					"display": null
+				},
+				{
+					"typeStr": "3",
+					"name": "Health"
+				}
+			],
+			"lines": [
+				{
+					"EnemyName": "Enemy",
+					"Health": 10,
+					"id": "TestEnemy"
+				},
+				{
+					"id": "Enemy2",
+					"EnemyName": "Waoooow",
+					"Health": 2
+				},
+				{
+					"id": "Enemy3",
+					"EnemyName": "jgejegij",
+					"Health": 5
+				}
+			],
+			"separators": [],
+			"props": {}
+		}
+	],
+	"customTypes": [],
+	"compress": false
+}
