@@ -117,7 +117,7 @@ PrefabInstance:
     - target: {fileID: 3342155682184530549, guid: 221f97aaf81917e4f8977357cc467d40,
         type: 3}
       propertyPath: m_Name
-      value: EnvironmentManager
+      value: RoomManager
       objectReference: {fileID: 0}
     - target: {fileID: 2652282776609715539, guid: 221f97aaf81917e4f8977357cc467d40,
         type: 3}

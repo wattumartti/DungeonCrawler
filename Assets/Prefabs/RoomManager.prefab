@@ -43,5 +43,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d9e4f2491cdafd43a4c6b6e6547df8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  additionalTileChance: 0.8
   baseRoomPrefab: {fileID: 4197149348493270643, guid: f66b6a1f0ddaab24e9a4c5ac4fc57e24,
     type: 3}
+  firstRoom: {fileID: 0}
+  roomDoorPrefab: {fileID: 2804442544898216450, guid: 1de0ccc9baa867c41969cc57299d6a6c,
+    type: 3}
+  _minRoomSize: {x: 0, y: 0}
+  _maxRoomSize: {x: 1, y: 1}

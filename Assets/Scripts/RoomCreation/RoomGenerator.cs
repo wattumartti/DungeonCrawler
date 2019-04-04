@@ -15,6 +15,7 @@ public class RoomGenerator : MonoBehaviour
 
     public BaseRoom baseRoomPrefab = null;
     public BaseRoom firstRoom = null;
+    public RoomDoor roomDoorPrefab = null;
 
     internal BaseRoom currentRoom = null;
 
@@ -59,6 +60,14 @@ public class RoomGenerator : MonoBehaviour
             return;
         }
 
+        for (int i = -1; i < 2; i++)
+        {
+            for (int j = -1; j < 2; j++)
+            {
+                this.firstRoom.roomLocations.Add(new Vector2(i, j));
+            }
+        }
+
         foreach (Vector2 pos in this.firstRoom.roomLocations)
         {
             roomLocations.Add(pos, this.firstRoom);
@@ -87,14 +96,26 @@ public class RoomGenerator : MonoBehaviour
             {
                 BaseRoom exitRoom = roomLocations[door.doorExit];
 
+                bool doorFound = false;
                 for (int i = 0; i < exitRoom.roomDoors.Count; ++i)
                 {
                     RoomDoor possibleConnection = exitRoom.roomDoors[i];
                     if (possibleConnection.doorEntrance == door.doorExit)
                     {
                         door.exitRoom = roomLocations[door.doorExit];
+                        doorFound = true;
                         break;
                     }
+                }
+
+                if (!doorFound)
+                {
+                    RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, exitRoom.transform);
+                    newDoor.entryRoom = exitRoom;
+                    newDoor.exitRoom = room;
+                    newDoor.doorEntrance = door.doorExit;
+                    newDoor.doorExit = door.doorEntrance;
+                    exitRoom.roomDoors.Add(newDoor);
                 }
 
                 continue;
@@ -132,6 +153,8 @@ public class RoomGenerator : MonoBehaviour
 
         newRoom.roomLocations = roomTiles;
         newRoom.InitRoom();
+
+        door.exitRoom = newRoom;
 
         PlaceRoom(newRoom);
     }

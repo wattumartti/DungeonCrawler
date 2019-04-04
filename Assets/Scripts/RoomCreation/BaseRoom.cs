@@ -5,11 +5,10 @@ using UnityEngine;
 
 public class BaseRoom : MonoBehaviour
 {
-    internal Vector2 roomSize = Vector2.zero;
     internal Guid roomId;
+    internal List<Vector2> roomLocations = new List<Vector2>();
 
     public List<RoomDoor> roomDoors = new List<RoomDoor>();
-    public List<Vector2> roomLocations = new List<Vector2>();
 
     private void CreateDoors()
     {
@@ -36,5 +35,21 @@ public class BaseRoom : MonoBehaviour
         }
 
         CreateDoors();
+    }
+
+    internal List<BaseRoom> GetNeighbors()
+    {
+        List<BaseRoom> neighbors = new List<BaseRoom>();
+        foreach (RoomDoor door in this.roomDoors)
+        {
+            BaseRoom room = door.exitRoom;
+
+            if (!neighbors.Contains(room))
+            {
+                neighbors.Add(room);
+            }
+        }
+
+        return neighbors;
     }
 }
