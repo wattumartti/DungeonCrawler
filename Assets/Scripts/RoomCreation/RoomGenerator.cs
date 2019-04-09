@@ -44,6 +44,7 @@ public class RoomGenerator : MonoBehaviour
 
     private void Update()
     {
+        // ONLY FOR TESTING PURPOSES!!
         if (Input.GetKeyDown(KeyCode.H))
         {
             BaseRoom room = roomDictionary.First(x => x.Value != null && x.Value != this.firstRoom && !x.Value.isActiveAndEnabled).Value;
@@ -51,8 +52,33 @@ public class RoomGenerator : MonoBehaviour
             room.gameObject.SetActive(true);
             room.transform.position = Vector3.zero;
         }
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            foreach (KeyValuePair<Guid, BaseRoom> kvp in roomDictionary)
+            {
+                if (kvp.Value == null)
+                {
+                    continue;
+                }
+
+                foreach (RoomDoor door in kvp.Value.roomDoors)
+                {
+                    if (door.connectedRooms.Count >= 2)
+                    {
+                        continue;
+                    }
+
+                    CreateConnectedRooms(kvp.Value);
+                    return;
+                }
+            }
+        }
+        // ONLY FOR TESTING PURPOSES!!
     }
 
+    /// <summary>
+    /// Creates the starting room for the generator
+    /// </summary>
     private void CreateFirstRoom()
     {
         if (this.firstRoom == null)
@@ -73,9 +99,13 @@ public class RoomGenerator : MonoBehaviour
             roomLocations.Add(pos, this.firstRoom);
         }
 
-        this.firstRoom.InitRoom();
+        this.firstRoom.InitRoom(null);
     }
 
+    /// <summary>
+    /// Creates adjacent rooms to the given room
+    /// </summary>
+    /// <param name="room"></param>
     internal static void CreateConnectedRooms(BaseRoom room)
     {
         if (room == null)
@@ -102,7 +132,7 @@ public class RoomGenerator : MonoBehaviour
                     RoomDoor possibleConnection = exitRoom.roomDoors[i];
                     if (possibleConnection.doorEntrance == door.doorExit)
                     {
-                        door.exitRoom = roomLocations[door.doorExit];
+                        door.connectedRooms.Add(roomLocations[door.doorExit]);
                         doorFound = true;
                         break;
                     }
@@ -111,8 +141,8 @@ public class RoomGenerator : MonoBehaviour
                 if (!doorFound)
                 {
                     RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, exitRoom.transform);
-                    newDoor.entryRoom = exitRoom;
-                    newDoor.exitRoom = room;
+                    newDoor.connectedRooms.Add(exitRoom);
+                    newDoor.connectedRooms.Add(room);
                     newDoor.doorEntrance = door.doorExit;
                     newDoor.doorExit = door.doorEntrance;
                     exitRoom.roomDoors.Add(newDoor);
@@ -125,6 +155,10 @@ public class RoomGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Creates a single room that should be connected to the given door
+    /// </summary>
+    /// <param name="door"></param>
     private static void CreateRoom(RoomDoor door)
     {
         if (door == null)
@@ -135,8 +169,10 @@ public class RoomGenerator : MonoBehaviour
 
         List<Vector2> firstTileLocations = GetOpenNeighboringTiles(door.doorExit);
 
-        List<Vector2> roomTiles = new List<Vector2>();
-        roomTiles.Add(door.doorExit);
+        List<Vector2> roomTiles = new List<Vector2>
+        {
+            door.doorExit
+        };
 
         UnityEngine.Random.InitState((int)DateTime.UtcNow.Ticks);
 
@@ -149,16 +185,22 @@ public class RoomGenerator : MonoBehaviour
 
         BaseRoom newRoom = Instantiate(Instance?.baseRoomPrefab);
         newRoom.gameObject.SetActive(false);
-        newRoom.transform.position = new Vector3(-10000, -10000);
 
         newRoom.roomLocations = roomTiles;
-        newRoom.InitRoom();
+        newRoom.InitRoom(door);
 
-        door.exitRoom = newRoom;
+        door.connectedRooms.Add(newRoom);
 
         PlaceRoom(newRoom);
     }
 
+    /// <summary>
+    /// Generates a random tile layout for the room using a cumulative probability
+    /// </summary>
+    /// <param name="tileList"></param>
+    /// <param name="cumulativeChance"></param>
+    /// <param name="possibleLocation"></param>
+    /// <returns></returns>
     private static List<Vector2> RandomRoomLayoutRecursive(List<Vector2> tileList, float cumulativeChance, Vector2 possibleLocation)
     {
         float randomValue = UnityEngine.Random.Range(0f, 1f);
@@ -185,14 +227,21 @@ public class RoomGenerator : MonoBehaviour
         return tileList;
     }
 
+    /// <summary>
+    /// Gets all neighboring tiles that are empty. Can be given a list of tiles to ignore
+    /// </summary>
+    /// <param name="center"></param>
+    /// <param name="excludedTiles"></param>
+    /// <returns></returns>
     private static List<Vector2> GetOpenNeighboringTiles(Vector2 center, List<Vector2> excludedTiles = null)
     {
-        List<Vector2> tileLocations = new List<Vector2>();
-
-        tileLocations.Add(center + Vector2.up);
-        tileLocations.Add(center + Vector2.down);
-        tileLocations.Add(center + Vector2.left);
-        tileLocations.Add(center + Vector2.right);
+        List<Vector2> tileLocations = new List<Vector2>
+        {
+            center + Vector2.up,
+            center + Vector2.down,
+            center + Vector2.left,
+            center + Vector2.right
+        };
 
         for (int i = tileLocations.Count - 1; i >= 0; i--)
         {
@@ -206,6 +255,10 @@ public class RoomGenerator : MonoBehaviour
         return tileLocations;
     }
 
+    /// <summary>
+    /// Adds the room to the managers list
+    /// </summary>
+    /// <param name="room"></param>
     private static void PlaceRoom(BaseRoom room)
     {
         if (room == null)

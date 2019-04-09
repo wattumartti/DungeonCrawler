@@ -404,6 +404,11 @@ PrefabInstance:
       propertyPath: entryRoom
       value: 
       objectReference: {fileID: 1621315111}
+    - target: {fileID: 2804442544898216450, guid: 1de0ccc9baa867c41969cc57299d6a6c,
+        type: 3}
+      propertyPath: doorEntrance.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1de0ccc9baa867c41969cc57299d6a6c, type: 3}
 --- !u!114 &829200337 stripped
@@ -1253,5 +1258,10 @@ PrefabInstance:
       propertyPath: firstRoom
       value: 
       objectReference: {fileID: 1621315111}
+    - target: {fileID: 3940132893880702715, guid: f5c1b50afb462cf4fbc255ca664c4b99,
+        type: 3}
+      propertyPath: additionalTileChance
+      value: 0.9
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f5c1b50afb462cf4fbc255ca664c4b99, type: 3}
