@@ -49,5 +49,14 @@ MonoBehaviour:
   firstRoom: {fileID: 0}
   roomDoorPrefab: {fileID: 2804442544898216450, guid: 1de0ccc9baa867c41969cc57299d6a6c,
     type: 3}
-  _minRoomSize: {x: 0, y: 0}
-  _maxRoomSize: {x: 1, y: 1}
+  firstRoomParams:
+    doorEntrances:
+    - {x: 1, y: 0}
+    - {x: -1, y: 0}
+    - {x: 0, y: 1}
+    - {x: 0, y: -1}
+    doorExits:
+    - {x: 2, y: 0}
+    - {x: -2, y: 0}
+    - {x: 0, y: 2}
+    - {x: 0, y: -2}

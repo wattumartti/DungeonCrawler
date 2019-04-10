@@ -9,10 +9,10 @@ public class BaseRoom : MonoBehaviour
     internal List<Vector2> roomLocations = new List<Vector2>();
     internal List<BaseRoom> neighboringRooms = new List<BaseRoom>();
 
-    public List<RoomDoor> roomDoors = new List<RoomDoor>();
+    internal List<RoomDoor> roomDoors = new List<RoomDoor>();
 
     /// <summary>
-    /// 
+    /// Create new doors for this room
     /// </summary>
     /// <param name="createdFromDoor"></param>
     private void CreateDoors(RoomDoor createdFromDoor)
@@ -22,39 +22,34 @@ public class BaseRoom : MonoBehaviour
             return;
         }
 
-        // Find furthest tiles in all directions except current door direction      
-        Vector2 excludedDirection = createdFromDoor.doorExit - createdFromDoor.doorEntrance;
-
-        for (int i = -1; i <= 1; ++i)
+        List<Vector2> directions = new List<Vector2>
         {
-            for (int j = -1; j <= 1; ++j)
+            Vector2.left,
+            Vector2.right,
+            Vector2.up,
+            Vector2.down
+        };
+
+        // Find furthest tiles in all directions except current door direction      
+        Vector2 excludedDirection = GetDoorEntrance(createdFromDoor) - GetDoorExit(createdFromDoor);
+
+        directions.Remove(excludedDirection);
+
+        for (int i = 0; i < directions.Count; ++i)
+        {
+            Vector2 direction = directions[i];
+
+            Vector2 doorLocation = FindFurthestTileInDirection(direction);
+
+            if (doorLocation == Vector2.zero)
             {
-                if (i == j || (i != 0 && j != 0))
-                {
-                    continue;
-                }
-
-                Vector2 direction = new Vector2(i, j);
-
-                if (direction == excludedDirection)
-                {
-                    continue;
-                }
-
-                Vector2 doorLocation = FindFurthestTileInDirection(direction);
-
-                if (doorLocation == Vector2.zero)
-                {
-                    continue;
-                }
-
-                RoomDoor newDoor = Instantiate(RoomGenerator.Instance?.roomDoorPrefab, this.transform);
-                newDoor.connectedRooms.Add(this);
-                newDoor.doorEntrance = doorLocation;
-                newDoor.doorExit = doorLocation + direction;
-                UnityEngine.Debug.Log(doorLocation + " + " + direction);
-                this.roomDoors.Add(newDoor);
+                continue;
             }
+
+            RoomDoor newDoor = Instantiate(RoomGenerator.Instance?.roomDoorPrefab, this.transform);
+            newDoor.connectedRooms.Add(doorLocation, this);
+            newDoor.connectedRooms.Add(doorLocation + direction, null);
+            this.roomDoors.Add(newDoor);
         }
     }
 
@@ -88,13 +83,13 @@ public class BaseRoom : MonoBehaviour
     /// <returns></returns>
     private Vector2 FindFurthestTileInDirection(Vector2 direction)
     {
-        float furthestValue = 0;
+        float furthestValue = float.MinValue; 
         Vector2 furthestPoint = Vector2.zero;
 
         for (int i = 0; i < this.roomLocations.Count; ++i)
         {
             Vector2 location = this.roomLocations[i];
-            float tempValue = Vector2.Dot(location, direction) / location.magnitude;
+            float tempValue = Vector2.Dot(direction, location);
 
             if (tempValue > furthestValue)
             {
@@ -102,7 +97,41 @@ public class BaseRoom : MonoBehaviour
                 furthestPoint = location;
             }
         }
-
+        
         return furthestPoint;
+    }
+
+    internal Vector2 GetDoorExit(RoomDoor door)
+    {
+        Vector2 doorExit = Vector2.zero;
+
+        foreach (KeyValuePair<Vector2, BaseRoom> kvp in door.connectedRooms)
+        {
+            if (kvp.Value == this)
+            {
+                continue;
+            }
+
+            doorExit = kvp.Key;
+        }
+
+        return doorExit;
+    }
+
+    internal Vector2 GetDoorEntrance(RoomDoor door)
+    {
+        Vector2 doorEntrance = Vector2.zero;
+
+        foreach (KeyValuePair<Vector2, BaseRoom> kvp in door.connectedRooms)
+        {
+            if (kvp.Value != this)
+            {
+                continue;
+            }
+
+            doorEntrance = kvp.Key;
+        }
+
+        return doorEntrance;
     }
 }

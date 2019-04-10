@@ -16,11 +16,16 @@ public class RoomGenerator : MonoBehaviour
     public BaseRoom baseRoomPrefab = null;
     public BaseRoom firstRoom = null;
     public RoomDoor roomDoorPrefab = null;
+    public FirstRoomParams firstRoomParams;
 
     internal BaseRoom currentRoom = null;
 
-    [SerializeField] private Vector2 _minRoomSize = Vector2.zero;
-    [SerializeField] private Vector2 _maxRoomSize = Vector2.one;
+    [System.Serializable]
+    public struct FirstRoomParams
+    {
+        public List<Vector2> doorEntrances;
+        public List<Vector2> doorExits;
+    }
 
     private void Awake()
     {
@@ -63,7 +68,7 @@ public class RoomGenerator : MonoBehaviour
 
                 foreach (RoomDoor door in kvp.Value.roomDoors)
                 {
-                    if (door.connectedRooms.Count >= 2)
+                    if (door.IsConnectingRooms())
                     {
                         continue;
                     }
@@ -99,6 +104,16 @@ public class RoomGenerator : MonoBehaviour
             roomLocations.Add(pos, this.firstRoom);
         }
 
+        for (int i = 0; i < this.firstRoomParams.doorEntrances.Count; ++i)
+        {
+            Vector2 entrance = this.firstRoomParams.doorEntrances[i];
+            Vector2 exit = this.firstRoomParams.doorExits[i];
+            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, this.firstRoom.transform);
+            newDoor.connectedRooms.Add(entrance, this.firstRoom);
+            newDoor.connectedRooms.Add(exit, null);
+            this.firstRoom.roomDoors.Add(newDoor);
+        }
+
         this.firstRoom.InitRoom(null);
     }
 
@@ -122,36 +137,18 @@ public class RoomGenerator : MonoBehaviour
 
         foreach (RoomDoor door in room.roomDoors)
         {
-            if (roomLocations.ContainsKey(door.doorExit))
+            Vector2 doorExit = room.GetDoorExit(door);
+            if (roomLocations.ContainsKey(doorExit) && doorExit != Vector2.zero)
             {
-                BaseRoom exitRoom = roomLocations[door.doorExit];
+                BaseRoom exitRoom = roomLocations[doorExit];
 
-                bool doorFound = false;
-                for (int i = 0; i < exitRoom.roomDoors.Count; ++i)
-                {
-                    RoomDoor possibleConnection = exitRoom.roomDoors[i];
-                    if (possibleConnection.doorEntrance == door.doorExit)
-                    {
-                        door.connectedRooms.Add(roomLocations[door.doorExit]);
-                        doorFound = true;
-                        break;
-                    }
-                }
-
-                if (!doorFound)
-                {
-                    RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, exitRoom.transform);
-                    newDoor.connectedRooms.Add(exitRoom);
-                    newDoor.connectedRooms.Add(room);
-                    newDoor.doorEntrance = door.doorExit;
-                    newDoor.doorExit = door.doorEntrance;
-                    exitRoom.roomDoors.Add(newDoor);
-                }
+                door.connectedRooms[doorExit] = exitRoom;
+                exitRoom.roomDoors.Add(door);
 
                 continue;
             }
 
-            CreateRoom(door);
+            CreateRoom(door, room);
         }
     }
 
@@ -159,19 +156,20 @@ public class RoomGenerator : MonoBehaviour
     /// Creates a single room that should be connected to the given door
     /// </summary>
     /// <param name="door"></param>
-    private static void CreateRoom(RoomDoor door)
+    private static void CreateRoom(RoomDoor door, BaseRoom connectedRoom)
     {
-        if (door == null)
+        if (door == null || connectedRoom == null)
         {
-            UnityEngine.Debug.LogError("Given door is null!");
+            UnityEngine.Debug.LogError("Given door or room is null!");
             return;
         }
 
-        List<Vector2> firstTileLocations = GetOpenNeighboringTiles(door.doorExit);
+        Vector2 doorExit = connectedRoom.GetDoorExit(door);
+        List<Vector2> firstTileLocations = GetOpenNeighboringTiles(doorExit);
 
         List<Vector2> roomTiles = new List<Vector2>
         {
-            door.doorExit
+            doorExit
         };
 
         UnityEngine.Random.InitState((int)DateTime.UtcNow.Ticks);
@@ -189,7 +187,7 @@ public class RoomGenerator : MonoBehaviour
         newRoom.roomLocations = roomTiles;
         newRoom.InitRoom(door);
 
-        door.connectedRooms.Add(newRoom);
+        door.connectedRooms[doorExit] = newRoom;
 
         PlaceRoom(newRoom);
     }

@@ -4,7 +4,23 @@ using UnityEngine;
 
 public class RoomDoor : MonoBehaviour
 {
-    internal List<BaseRoom> connectedRooms = new List<BaseRoom>();
-    public Vector2 doorEntrance = Vector2.zero;
-    public Vector2 doorExit = Vector2.zero;
+    internal Dictionary<Vector2, BaseRoom> connectedRooms = new Dictionary<Vector2, BaseRoom>();
+
+    internal bool IsConnectingRooms()
+    {
+        if (connectedRooms.Count < 2)
+        {
+            return false;
+        }
+
+        foreach (KeyValuePair<Vector2, BaseRoom> kvp in this.connectedRooms)
+        {
+            if (kvp.Value == null)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
