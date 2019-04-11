@@ -10,6 +10,7 @@ public class BaseRoom : MonoBehaviour
     internal List<BaseRoom> neighboringRooms = new List<BaseRoom>();
 
     internal List<RoomDoor> roomDoors = new List<RoomDoor>();
+    internal Dictionary<Vector2, GameObject> roomWalls = new Dictionary<Vector2, GameObject>();
 
     /// <summary>
     /// Create new doors for this room
@@ -46,8 +47,21 @@ public class BaseRoom : MonoBehaviour
                 continue;
             }
 
+            Vector2 setLocation = doorLocation + (direction * 0.5f);
+
+            if (RoomGenerator.roomLocations.ContainsKey(doorLocation + direction))
+            {
+                BaseRoom room = RoomGenerator.roomLocations[doorLocation + direction];
+                if (room.roomWalls.ContainsKey(setLocation))
+                {
+                    GameObject destroyWall = room.roomWalls[setLocation];
+                    room.roomWalls.Remove(setLocation);
+                    Destroy(destroyWall);
+                }
+            }
+
             RoomDoor newDoor = Instantiate(RoomGenerator.Instance?.roomDoorPrefab, this.transform);
-            newDoor.transform.position = doorLocation + (direction * 0.5f);
+            newDoor.transform.position = setLocation;
             newDoor.transform.position += new Vector3(0, 0, -5);
             newDoor.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
             newDoor.connectedRooms.Add(doorLocation, this);
@@ -81,6 +95,8 @@ public class BaseRoom : MonoBehaviour
                 obj.transform.position = tile + (direction * 0.5f);
                 // Adjust to player position
                 obj.transform.position += new Vector3(0, 0, -5);
+
+                this.roomWalls.Add(tile + (direction * 0.5f), obj);
             }
         }
     }

@@ -183,7 +183,6 @@ public class RoomGenerator : MonoBehaviour
         }
 
         BaseRoom newRoom = Instantiate(Instance?.baseRoomPrefab);
-        newRoom.gameObject.SetActive(false);
 
         newRoom.roomLocations = roomTiles;
         newRoom.InitRoom(door);
