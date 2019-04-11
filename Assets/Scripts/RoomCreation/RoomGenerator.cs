@@ -16,6 +16,7 @@ public class RoomGenerator : MonoBehaviour
     public BaseRoom baseRoomPrefab = null;
     public BaseRoom firstRoom = null;
     public RoomDoor roomDoorPrefab = null;
+    public GameObject roomWallPrefab = null;
     public FirstRoomParams firstRoomParams;
 
     internal BaseRoom currentRoom = null;
@@ -231,7 +232,7 @@ public class RoomGenerator : MonoBehaviour
     /// <param name="center"></param>
     /// <param name="excludedTiles"></param>
     /// <returns></returns>
-    private static List<Vector2> GetOpenNeighboringTiles(Vector2 center, List<Vector2> excludedTiles = null)
+    internal static List<Vector2> GetOpenNeighboringTiles(Vector2 center, List<Vector2> excludedTiles = null)
     {
         List<Vector2> tileLocations = new List<Vector2>
         {

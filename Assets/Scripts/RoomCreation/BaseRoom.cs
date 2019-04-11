@@ -47,10 +47,57 @@ public class BaseRoom : MonoBehaviour
             }
 
             RoomDoor newDoor = Instantiate(RoomGenerator.Instance?.roomDoorPrefab, this.transform);
+            newDoor.transform.position = doorLocation + (direction * 0.5f);
+            newDoor.transform.position += new Vector3(0, 0, -5);
+            newDoor.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
             newDoor.connectedRooms.Add(doorLocation, this);
             newDoor.connectedRooms.Add(doorLocation + direction, null);
             this.roomDoors.Add(newDoor);
         }
+    }
+
+    private void CreateWalls()
+    {
+        List<Vector2> doorExits = GetDoorExits();
+        foreach (Vector2 tile in this.roomLocations)
+        {
+            List<Vector2> emptyNeighboringTiles = RoomGenerator.GetOpenNeighboringTiles(tile, this.roomLocations);
+
+            for (int i = 0; i < emptyNeighboringTiles.Count; ++i)
+            {
+                Vector2 neighboringTile = emptyNeighboringTiles[i];
+
+                if (doorExits.Contains(neighboringTile))
+                {
+                    continue;
+                }
+
+                // Create a wall
+                GameObject obj = Instantiate(RoomGenerator.Instance?.roomWallPrefab, this.transform);
+
+                // Rotate and position the wall
+                Vector2 direction = neighboringTile - tile;
+                obj.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
+                obj.transform.position = tile + (direction * 0.5f);
+                // Adjust to player position
+                obj.transform.position += new Vector3(0, 0, -5);
+            }
+        }
+    }
+
+    private List<Vector2> GetDoorExits()
+    {
+        List<Vector2> exits = new List<Vector2>();
+        foreach (RoomDoor door in this.roomDoors)
+        {
+            Vector2 doorExit = GetDoorExit(door);
+            if (doorExit != Vector2.zero)
+            {
+                exits.Add(doorExit);
+            }
+        }
+
+        return exits;
     }
 
     internal void InitRoom(RoomDoor createdFromDoor)
@@ -74,6 +121,7 @@ public class BaseRoom : MonoBehaviour
         }
 
         CreateDoors(createdFromDoor);
+        CreateWalls();
     }
 
     /// <summary>

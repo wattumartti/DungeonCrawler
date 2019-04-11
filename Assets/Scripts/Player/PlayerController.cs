@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public CharacterController characterController = null;
+
     private void Awake()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -20,14 +22,15 @@ public class PlayerController : MonoBehaviour
             translation *= 10.0f;
         }
 
-        Translate(translation);
+        if (translation != Vector2.zero)
+        {
+            Translate(translation);
+        }
     }
 
     public void Translate(Vector2 translation)
     {
-        float newX = this.transform.position.x + translation.x;
-        float newY = this.transform.position.y + translation.y;
-        this.transform.position = new Vector3(newX, newY, this.transform.position.z);
+        this.characterController?.Move(translation);
     }
 
     Vector3 GetInputTranslationDirection()
