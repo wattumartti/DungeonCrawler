@@ -12,21 +12,13 @@ public class RoomGenerator : MonoBehaviour
     internal static Dictionary<Vector2, BaseRoom> roomLocations = new Dictionary<Vector2, BaseRoom>();
 
     public float additionalTileChance = 0.5f;
+    public int doorAmountPerRoom = 2;
+    public float roomDespawnDistance = 10;
 
     public BaseRoom baseRoomPrefab = null;
     public BaseRoom firstRoom = null;
     public RoomDoor roomDoorPrefab = null;
     public GameObject roomWallPrefab = null;
-    public FirstRoomParams firstRoomParams;
-
-    internal BaseRoom currentRoom = null;
-
-    [System.Serializable]
-    public struct FirstRoomParams
-    {
-        public List<Vector2> doorEntrances;
-        public List<Vector2> doorExits;
-    }
 
     private void Awake()
     {
@@ -50,14 +42,21 @@ public class RoomGenerator : MonoBehaviour
 
     private void Update()
     {
-        // ONLY FOR TESTING PURPOSES!!
-        if (Input.GetKeyDown(KeyCode.H))
+        Dictionary<Guid, BaseRoom> despawnRooms = new Dictionary<Guid, BaseRoom>();
+        foreach (KeyValuePair<Guid, BaseRoom> kvp in roomDictionary)
         {
-            BaseRoom room = roomDictionary.First(x => x.Value != null && x.Value != this.firstRoom && !x.Value.isActiveAndEnabled).Value;
-
-            room.gameObject.SetActive(true);
-            room.transform.position = Vector3.zero;
+            if (kvp.Value.GetDistanceToPlayer() > this.roomDespawnDistance)
+            {
+                despawnRooms.Add(kvp.Key, kvp.Value);
+            }
         }
+
+        foreach (KeyValuePair<Guid, BaseRoom> kvp in despawnRooms)
+        {
+            HandleRoomDespawning(kvp.Value, kvp.Key);
+        }
+
+        // ONLY FOR TESTING PURPOSES!!
         if (Input.GetKeyDown(KeyCode.K))
         {
             foreach (KeyValuePair<Guid, BaseRoom> kvp in roomDictionary)
@@ -67,9 +66,9 @@ public class RoomGenerator : MonoBehaviour
                     continue;
                 }
 
-                foreach (RoomDoor door in kvp.Value.roomDoors)
+                foreach (KeyValuePair<Vector2, RoomDoor> doorPair in kvp.Value.roomDoors)
                 {
-                    if (door.IsConnectingRooms())
+                    if (doorPair.Value.IsConnectingRooms())
                     {
                         continue;
                     }
@@ -80,6 +79,67 @@ public class RoomGenerator : MonoBehaviour
             }
         }
         // ONLY FOR TESTING PURPOSES!!
+    }
+
+    private void HandleRoomDespawning(BaseRoom room, Guid roomId)
+    {
+        roomDictionary.Remove(roomId);
+
+        // Change all connected doors' parent to their other connected room so they don't get destroyed
+        Dictionary<Vector2, RoomDoor> roomDoors = room.roomDoors;
+        Dictionary<RoomDoor, BaseRoom> neighboringRooms = new Dictionary<RoomDoor, BaseRoom>();
+
+        foreach (KeyValuePair<Vector2, RoomDoor> kvp in roomDoors)
+        {
+            RoomDoor door = kvp.Value;
+
+            if (neighboringRooms.ContainsKey(door))
+            {
+                continue;
+            }
+
+            neighboringRooms.Add(door, door.connectedRooms.FirstOrDefault(x => x.Value != room).Value);
+        }
+
+        foreach (KeyValuePair<RoomDoor, BaseRoom> kvp in neighboringRooms)
+        {
+            BaseRoom neighboringRoom = kvp.Value;
+
+            if (neighboringRoom == null)
+            {
+                continue;
+            }
+
+            RoomDoor currentDoor = kvp.Key;
+
+            Vector2 setLocation = currentDoor.GetLocation();
+            Quaternion setRotation = currentDoor.transform.rotation;
+            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, neighboringRoom.transform);
+            newDoor.transform.position = setLocation;
+            newDoor.transform.position += new Vector3(0, 0, -5);
+            newDoor.transform.rotation = setRotation;
+            newDoor.connectedRooms = currentDoor.connectedRooms;
+
+            if (neighboringRoom.roomDoors.ContainsKey(setLocation))
+            {
+                neighboringRoom.roomDoors[setLocation] = newDoor;
+            }
+            else
+            {
+                neighboringRoom.roomDoors.Add(setLocation, newDoor);
+            }         
+        }
+
+        for (int i = 0; i < room.roomLocations.Count; ++i)
+        {
+            Vector2 location = room.roomLocations[i];
+            if (roomLocations.ContainsKey(location))
+            {
+                roomLocations.Remove(location);
+            }
+        }
+
+        Destroy(room.gameObject);
     }
 
     /// <summary>
@@ -105,17 +165,53 @@ public class RoomGenerator : MonoBehaviour
             roomLocations.Add(pos, this.firstRoom);
         }
 
-        for (int i = 0; i < this.firstRoomParams.doorEntrances.Count; ++i)
-        {
-            Vector2 entrance = this.firstRoomParams.doorEntrances[i];
-            Vector2 exit = this.firstRoomParams.doorExits[i];
-            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, this.firstRoom.transform);
-            newDoor.connectedRooms.Add(entrance, this.firstRoom);
-            newDoor.connectedRooms.Add(exit, null);
-            this.firstRoom.roomDoors.Add(newDoor);
-        }
+        CreateFirstRoomDoors();
 
         this.firstRoom.InitRoom(null);
+    }
+
+    private void CreateFirstRoomDoors()
+    {
+        List<Vector2> directions = new List<Vector2>
+        {
+            Vector2.left,
+            Vector2.right,
+            Vector2.up,
+            Vector2.down
+        };
+
+        for (int i = 0; i < directions.Count; ++i)
+        {
+            Vector2 direction = directions[i];
+
+            Vector2 doorLocation = this.firstRoom.FindFurthestTileInDirection(direction);
+
+            if (doorLocation == Vector2.zero)
+            {
+                continue;
+            }
+
+            Vector2 setLocation = doorLocation + (direction * 0.5f);
+
+            if (roomLocations.ContainsKey(doorLocation + direction))
+            {
+                BaseRoom room = roomLocations[doorLocation + direction];
+                if (room.roomWalls.ContainsKey(setLocation))
+                {
+                    GameObject destroyWall = room.roomWalls[setLocation];
+                    room.roomWalls.Remove(setLocation);
+                    Destroy(destroyWall);
+                }
+            }
+
+            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, this.firstRoom.transform);
+            newDoor.transform.position = setLocation;
+            newDoor.transform.position += new Vector3(0, 0, -5);
+            newDoor.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
+            newDoor.connectedRooms.Add(doorLocation, this.firstRoom);
+            newDoor.connectedRooms.Add(doorLocation + direction, null);
+            this.firstRoom.roomDoors.Add(setLocation, newDoor);
+        }
     }
 
     /// <summary>
@@ -136,20 +232,24 @@ public class RoomGenerator : MonoBehaviour
             return;
         }
 
-        foreach (RoomDoor door in room.roomDoors)
+        foreach (KeyValuePair<Vector2, RoomDoor> kvp in room.roomDoors)
         {
-            Vector2 doorExit = room.GetDoorExit(door);
+            Vector2 doorExit = room.GetDoorExit(kvp.Value);
             if (roomLocations.ContainsKey(doorExit) && doorExit != Vector2.zero)
             {
                 BaseRoom exitRoom = roomLocations[doorExit];
 
-                door.connectedRooms[doorExit] = exitRoom;
-                exitRoom.roomDoors.Add(door);
+                kvp.Value.connectedRooms[doorExit] = exitRoom;
+
+                if (!exitRoom.roomDoors.ContainsKey(kvp.Key))
+                {
+                    exitRoom.roomDoors.Add(kvp.Key, kvp.Value);
+                }              
 
                 continue;
             }
 
-            CreateRoom(door, room);
+            CreateRoom(kvp.Value, room);
         }
     }
 
@@ -251,6 +351,32 @@ public class RoomGenerator : MonoBehaviour
         }
 
         return tileLocations;
+    }
+
+    internal static List<Vector2> GetNeighboringTiles(Vector2 center)
+    {
+        List<Vector2> tileLocations = new List<Vector2>
+        {
+            center + Vector2.up,
+            center + Vector2.down,
+            center + Vector2.left,
+            center + Vector2.right
+        };
+
+        return tileLocations;
+    }
+
+    internal static RoomDoor GetDoorWithLocation(Vector2 location, BaseRoom room)
+    {
+        foreach (KeyValuePair<Vector2, RoomDoor> kvp in room.roomDoors)
+        {
+            if (kvp.Value.connectedRooms.ContainsKey(location))
+            {
+                return kvp.Value;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

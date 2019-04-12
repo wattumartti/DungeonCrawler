@@ -23,4 +23,11 @@ public class RoomDoor : MonoBehaviour
 
         return true;
     }
+
+    internal Vector2 GetLocation()
+    {
+        Vector2 location = new Vector2(this.transform.position.x, this.transform.position.y);
+
+        return location;
+    }
 }

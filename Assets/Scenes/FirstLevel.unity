@@ -301,11 +301,6 @@ PrefabInstance:
       propertyPath: firstRoom
       value: 
       objectReference: {fileID: 1616459869}
-    - target: {fileID: 86595280410638601, guid: 221f97aaf81917e4f8977357cc467d40,
-        type: 3}
-      propertyPath: additionalTileChance
-      value: 0.95
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 221f97aaf81917e4f8977357cc467d40, type: 3}
 --- !u!1 &624862027
@@ -440,6 +435,10 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2024830060, guid: 1ac56251e28b3a947912452c2a878b30, type: 3}
+      propertyPath: orthographic size
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1ac56251e28b3a947912452c2a878b30, type: 3}

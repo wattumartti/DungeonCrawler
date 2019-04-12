@@ -9,7 +9,7 @@ public class BaseRoom : MonoBehaviour
     internal List<Vector2> roomLocations = new List<Vector2>();
     internal List<BaseRoom> neighboringRooms = new List<BaseRoom>();
 
-    internal List<RoomDoor> roomDoors = new List<RoomDoor>();
+    internal Dictionary<Vector2, RoomDoor> roomDoors = new Dictionary<Vector2, RoomDoor>();
     internal Dictionary<Vector2, GameObject> roomWalls = new Dictionary<Vector2, GameObject>();
 
     /// <summary>
@@ -23,7 +23,7 @@ public class BaseRoom : MonoBehaviour
             return;
         }
 
-        List<Vector2> directions = new List<Vector2>
+        List<Vector2> possibleDirections = new List<Vector2>
         {
             Vector2.left,
             Vector2.right,
@@ -34,7 +34,17 @@ public class BaseRoom : MonoBehaviour
         // Find furthest tiles in all directions except current door direction      
         Vector2 excludedDirection = GetDoorEntrance(createdFromDoor) - GetDoorExit(createdFromDoor);
 
-        directions.Remove(excludedDirection);
+        possibleDirections.Remove(excludedDirection);
+
+        List<Vector2> directions = new List<Vector2>();
+
+        for (int i = 0; i < RoomGenerator.Instance?.doorAmountPerRoom; ++i)
+        {
+            int randomNumber = UnityEngine.Random.Range(0, possibleDirections.Count);
+
+            directions.Add(possibleDirections[randomNumber]);
+            possibleDirections.RemoveAt(randomNumber);
+        }
 
         for (int i = 0; i < directions.Count; ++i)
         {
@@ -66,7 +76,7 @@ public class BaseRoom : MonoBehaviour
             newDoor.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
             newDoor.connectedRooms.Add(doorLocation, this);
             newDoor.connectedRooms.Add(doorLocation + direction, null);
-            this.roomDoors.Add(newDoor);
+            this.roomDoors.Add(setLocation, newDoor);
         }
     }
 
@@ -75,38 +85,58 @@ public class BaseRoom : MonoBehaviour
         List<Vector2> doorExits = GetDoorExits();
         foreach (Vector2 tile in this.roomLocations)
         {
-            List<Vector2> emptyNeighboringTiles = RoomGenerator.GetOpenNeighboringTiles(tile, this.roomLocations);
+            List<Vector2> neighboringTiles = RoomGenerator.GetNeighboringTiles(tile);
 
-            for (int i = 0; i < emptyNeighboringTiles.Count; ++i)
+            for (int i = 0; i < neighboringTiles.Count; ++i)
             {
-                Vector2 neighboringTile = emptyNeighboringTiles[i];
+                Vector2 neighboringTile = neighboringTiles[i];
 
-                if (doorExits.Contains(neighboringTile))
+                if (this.roomLocations.Contains(neighboringTile))
                 {
                     continue;
+                }
+
+                Vector2 direction = neighboringTile - tile;
+                Vector2 setLocation = tile + (direction * 0.5f);
+
+                if (this.roomDoors.ContainsKey(setLocation))
+                {
+                    continue;
+                }
+
+                if (RoomGenerator.roomLocations.ContainsKey(neighboringTile))
+                {
+                    BaseRoom neighboringRoom = RoomGenerator.roomLocations[neighboringTile];
+   
+                    if (neighboringRoom.roomDoors.ContainsKey(setLocation))
+                    {
+                        RoomDoor neighborDoor = neighboringRoom.roomDoors[setLocation];
+                        this.roomDoors.Add(setLocation, neighborDoor);
+
+                        continue;
+                    }
                 }
 
                 // Create a wall
                 GameObject obj = Instantiate(RoomGenerator.Instance?.roomWallPrefab, this.transform);
 
                 // Rotate and position the wall
-                Vector2 direction = neighboringTile - tile;
                 obj.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
-                obj.transform.position = tile + (direction * 0.5f);
+                obj.transform.position = setLocation;
                 // Adjust to player position
                 obj.transform.position += new Vector3(0, 0, -5);
 
-                this.roomWalls.Add(tile + (direction * 0.5f), obj);
+                this.roomWalls.Add(setLocation, obj);
             }
         }
     }
 
-    private List<Vector2> GetDoorExits()
+    internal List<Vector2> GetDoorExits()
     {
         List<Vector2> exits = new List<Vector2>();
-        foreach (RoomDoor door in this.roomDoors)
+        foreach (KeyValuePair<Vector2, RoomDoor> kvp in this.roomDoors)
         {
-            Vector2 doorExit = GetDoorExit(door);
+            Vector2 doorExit = GetDoorExit(kvp.Value);
             if (doorExit != Vector2.zero)
             {
                 exits.Add(doorExit);
@@ -145,7 +175,7 @@ public class BaseRoom : MonoBehaviour
     /// </summary>
     /// <param name="direction"></param>
     /// <returns></returns>
-    private Vector2 FindFurthestTileInDirection(Vector2 direction)
+    internal Vector2 FindFurthestTileInDirection(Vector2 direction)
     {
         float furthestValue = float.MinValue; 
         Vector2 furthestPoint = Vector2.zero;
@@ -197,5 +227,29 @@ public class BaseRoom : MonoBehaviour
         }
 
         return doorEntrance;
+    }
+
+    /// <summary>
+    /// Gets the distance of the closest tile to the player
+    /// </summary>
+    /// <returns></returns>
+    internal float GetDistanceToPlayer()
+    {
+        float shortestDistance = float.MaxValue;
+        Vector2 playerPosition = PlayerController.PlayerPosition;
+
+        for (int i = 0; i < this.roomLocations.Count; ++i)
+        {
+            Vector2 tile = this.roomLocations[i];
+
+            float distance = Vector2.Distance(tile, playerPosition);
+
+            if (distance < shortestDistance)
+            {
+                shortestDistance = distance;
+            }
+        }
+
+        return shortestDistance;
     }
 }
