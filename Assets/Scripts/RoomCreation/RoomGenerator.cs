@@ -93,12 +93,16 @@ public class RoomGenerator : MonoBehaviour
         {
             RoomDoor door = kvp.Value;
 
-            if (neighboringRooms.ContainsKey(door))
+            Vector2 doorExit = room.GetDoorExit(door);
+
+            if (!roomLocations.ContainsKey(doorExit))
             {
                 continue;
             }
 
-            neighboringRooms.Add(door, door.connectedRooms.FirstOrDefault(x => x.Value != room).Value);
+            BaseRoom exitRoom = roomLocations[doorExit];
+
+            neighboringRooms.Add(door, exitRoom);
         }
 
         foreach (KeyValuePair<RoomDoor, BaseRoom> kvp in neighboringRooms)
@@ -113,21 +117,9 @@ public class RoomGenerator : MonoBehaviour
             RoomDoor currentDoor = kvp.Key;
 
             Vector2 setLocation = currentDoor.GetLocation();
-            Quaternion setRotation = currentDoor.transform.rotation;
-            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, neighboringRoom.transform);
-            newDoor.transform.position = setLocation;
-            newDoor.transform.position += new Vector3(0, 0, -5);
-            newDoor.transform.rotation = setRotation;
-            newDoor.connectedRooms = currentDoor.connectedRooms;
 
-            if (neighboringRoom.roomDoors.ContainsKey(setLocation))
-            {
-                neighboringRoom.roomDoors[setLocation] = newDoor;
-            }
-            else
-            {
-                neighboringRoom.roomDoors.Add(setLocation, newDoor);
-            }         
+            currentDoor.transform.SetParent(neighboringRoom.transform);
+            neighboringRoom.roomDoors[setLocation] = currentDoor;       
         }
 
         for (int i = 0; i < room.roomLocations.Count; ++i)
@@ -244,7 +236,7 @@ public class RoomGenerator : MonoBehaviour
                 if (!exitRoom.roomDoors.ContainsKey(kvp.Key))
                 {
                     exitRoom.roomDoors.Add(kvp.Key, kvp.Value);
-                }              
+                }
 
                 continue;
             }

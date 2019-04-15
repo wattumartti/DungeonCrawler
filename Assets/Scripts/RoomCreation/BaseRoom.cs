@@ -32,7 +32,7 @@ public class BaseRoom : MonoBehaviour
         };
 
         // Find furthest tiles in all directions except current door direction      
-        Vector2 excludedDirection = GetDoorEntrance(createdFromDoor) - GetDoorExit(createdFromDoor);
+        Vector2 excludedDirection = GetDoorExit(createdFromDoor) - GetDoorEntrance(createdFromDoor);
 
         possibleDirections.Remove(excludedDirection);
 
@@ -167,7 +167,7 @@ public class BaseRoom : MonoBehaviour
         }
 
         CreateDoors(createdFromDoor);
-        CreateWalls();
+        CreateWalls();    
     }
 
     /// <summary>
@@ -197,36 +197,28 @@ public class BaseRoom : MonoBehaviour
 
     internal Vector2 GetDoorExit(RoomDoor door)
     {
-        Vector2 doorExit = Vector2.zero;
-
-        foreach (KeyValuePair<Vector2, BaseRoom> kvp in door.connectedRooms)
-        {
-            if (kvp.Value == this)
-            {
-                continue;
-            }
-
-            doorExit = kvp.Key;
-        }
-
-        return doorExit;
-    }
-
-    internal Vector2 GetDoorEntrance(RoomDoor door)
-    {
-        Vector2 doorEntrance = Vector2.zero;
-
         foreach (KeyValuePair<Vector2, BaseRoom> kvp in door.connectedRooms)
         {
             if (kvp.Value != this)
             {
-                continue;
+                return kvp.Key;
             }
-
-            doorEntrance = kvp.Key;
         }
 
-        return doorEntrance;
+        return Vector2.zero;
+    }
+
+    internal Vector2 GetDoorEntrance(RoomDoor door)
+    {
+        foreach (KeyValuePair<Vector2, BaseRoom> kvp in door.connectedRooms)
+        {
+            if (kvp.Value == this)
+            {
+                return kvp.Key;
+            }
+        }
+
+        return Vector2.zero;
     }
 
     /// <summary>

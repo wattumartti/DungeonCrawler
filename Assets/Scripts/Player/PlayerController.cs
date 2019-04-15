@@ -22,7 +22,7 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Confined;
 
         this.currentRoom.Subscribe(x => RoomGenerator.CreateConnectedRooms(x));
     }
