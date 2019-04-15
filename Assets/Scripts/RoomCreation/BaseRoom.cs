@@ -61,13 +61,16 @@ public class BaseRoom : MonoBehaviour
 
             if (RoomGenerator.roomLocations.ContainsKey(doorLocation + direction))
             {
-                BaseRoom room = RoomGenerator.roomLocations[doorLocation + direction];
-                if (room.roomWalls.ContainsKey(setLocation))
-                {
-                    GameObject destroyWall = room.roomWalls[setLocation];
-                    room.roomWalls.Remove(setLocation);
-                    Destroy(destroyWall);
-                }
+                // Disabled creating new doors to old rooms for now
+                continue;
+
+                //BaseRoom room = RoomGenerator.roomLocations[doorLocation + direction];
+                //if (room.roomWalls.ContainsKey(setLocation))
+                //{
+                //    GameObject destroyWall = room.roomWalls[setLocation];
+                //    room.roomWalls.Remove(setLocation);
+                //    Destroy(destroyWall);
+                //}
             }
 
             RoomDoor newDoor = Instantiate(RoomGenerator.Instance?.roomDoorPrefab, this.transform);
