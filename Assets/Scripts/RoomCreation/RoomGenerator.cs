@@ -42,6 +42,8 @@ public class RoomGenerator : MonoBehaviour
 
     private void Update()
     {
+        // Create a temporary dictionary with all rooms that are eligible for despawning
+        // Necessary because despawned rooms should also be removed from roomDictionary
         Dictionary<Guid, BaseRoom> despawnRooms = new Dictionary<Guid, BaseRoom>();
         foreach (KeyValuePair<Guid, BaseRoom> kvp in roomDictionary)
         {
@@ -51,11 +53,13 @@ public class RoomGenerator : MonoBehaviour
             }
         }
 
+        // Enumerate through and despawn the rooms
         foreach (KeyValuePair<Guid, BaseRoom> kvp in despawnRooms)
         {
             HandleRoomDespawning(kvp.Value, kvp.Key);
         }
 
+#if UNITY_EDITOR
         // ONLY FOR TESTING PURPOSES!!
         if (Input.GetKeyDown(KeyCode.K))
         {
@@ -79,22 +83,30 @@ public class RoomGenerator : MonoBehaviour
             }
         }
         // ONLY FOR TESTING PURPOSES!!
+#endif
     }
 
+    /// <summary>
+    /// Removes the room from the overall dictionary, sets all door parents and destroys the room object
+    /// </summary>
+    /// <param name="room">Room to destroy</param>
+    /// <param name="roomId">Unique ID of the room</param>
     private void HandleRoomDespawning(BaseRoom room, Guid roomId)
     {
+        // Remove the room from overall dictionary
         roomDictionary.Remove(roomId);
-
-        // Change all connected doors' parent to their other connected room so they don't get destroyed
+        
         Dictionary<Vector2, RoomDoor> roomDoors = room.roomDoors;
         Dictionary<RoomDoor, BaseRoom> neighboringRooms = new Dictionary<RoomDoor, BaseRoom>();
 
+        // Enumerate through the room's doors
         foreach (KeyValuePair<Vector2, RoomDoor> kvp in roomDoors)
         {
             RoomDoor door = kvp.Value;
 
             Vector2 doorExit = room.GetDoorExit(door);
 
+            // Skip doors that don't have another room connected
             if (!roomLocations.ContainsKey(doorExit))
             {
                 continue;
@@ -105,6 +117,7 @@ public class RoomGenerator : MonoBehaviour
             neighboringRooms.Add(door, exitRoom);
         }
 
+        // Enumerate through all doors
         foreach (KeyValuePair<RoomDoor, BaseRoom> kvp in neighboringRooms)
         {
             BaseRoom neighboringRoom = kvp.Value;
@@ -118,19 +131,22 @@ public class RoomGenerator : MonoBehaviour
 
             Vector2 setLocation = currentDoor.GetLocation();
 
-            currentDoor.transform.SetParent(neighboringRoom.transform);
-            neighboringRoom.roomDoors[setLocation] = currentDoor;       
+            // Change connected door's parent to their other connected room so they don't get destroyed
+            currentDoor.transform.SetParent(neighboringRoom.transform);   
         }
 
+        // Loop through all the tile locations for the room to be destroyed
         for (int i = 0; i < room.roomLocations.Count; ++i)
         {
             Vector2 location = room.roomLocations[i];
             if (roomLocations.ContainsKey(location))
             {
+                // Remove the tile location from the overall used locations
                 roomLocations.Remove(location);
             }
         }
 
+        // Finally destroy the room object
         Destroy(room.gameObject);
     }
 
@@ -144,6 +160,7 @@ public class RoomGenerator : MonoBehaviour
             return;
         }
 
+        // Create a 3x3 room to start from
         for (int i = -1; i < 2; i++)
         {
             for (int j = -1; j < 2; j++)
@@ -152,19 +169,31 @@ public class RoomGenerator : MonoBehaviour
             }
         }
 
+        // Add the used locations to the overall dictionary
         foreach (Vector2 pos in this.firstRoom.roomLocations)
         {
             roomLocations.Add(pos, this.firstRoom);
         }
 
-        CreateFirstRoomDoors();
+        CreateRoomDoors(null, this.firstRoom);
 
         this.firstRoom.InitRoom(null);
     }
 
-    private void CreateFirstRoomDoors()
+    /// <summary>
+    /// Creates doors for the first room
+    /// </summary>
+    private void CreateRoomDoors(RoomDoor createdFromDoor, BaseRoom room)
     {
-        List<Vector2> directions = new List<Vector2>
+        if (room == null)
+        {
+            return;
+        }
+
+        // Ignore restrictions for the first room
+        bool ignoreRestrictions = createdFromDoor == null;
+
+        List<Vector2> possibleDirections = new List<Vector2>
         {
             Vector2.left,
             Vector2.right,
@@ -172,12 +201,35 @@ public class RoomGenerator : MonoBehaviour
             Vector2.down
         };
 
+        List<Vector2> directions = new List<Vector2>();
+
+        if (!ignoreRestrictions)
+        {
+            // Find furthest tiles in all directions except current door direction      
+            Vector2 excludedDirection = room.GetDoorExit(createdFromDoor) - room.GetDoorEntrance(createdFromDoor);
+
+            possibleDirections.Remove(excludedDirection);
+
+            for (int i = 0; i < Instance?.doorAmountPerRoom; ++i)
+            {
+                int randomNumber = UnityEngine.Random.Range(0, possibleDirections.Count);
+
+                directions.Add(possibleDirections[randomNumber]);
+                possibleDirections.RemoveAt(randomNumber);
+            }
+        }
+        else
+        {
+            directions = possibleDirections;
+        }
+
         for (int i = 0; i < directions.Count; ++i)
         {
             Vector2 direction = directions[i];
 
-            Vector2 doorLocation = this.firstRoom.FindFurthestTileInDirection(direction);
+            Vector2 doorLocation = room.FindFurthestTileInDirection(direction);
 
+            // Skip if no eligible location was found
             if (doorLocation == Vector2.zero)
             {
                 continue;
@@ -187,22 +239,25 @@ public class RoomGenerator : MonoBehaviour
 
             if (roomLocations.ContainsKey(doorLocation + direction))
             {
-                BaseRoom room = roomLocations[doorLocation + direction];
-                if (room.roomWalls.ContainsKey(setLocation))
-                {
-                    GameObject destroyWall = room.roomWalls[setLocation];
-                    room.roomWalls.Remove(setLocation);
-                    Destroy(destroyWall);
-                }
+                // Disabled creating new doors to old rooms for now
+                continue;
+
+                //BaseRoom room = RoomGenerator.roomLocations[doorLocation + direction];
+                //if (room.roomWalls.ContainsKey(setLocation))
+                //{
+                //    GameObject destroyWall = room.roomWalls[setLocation];
+                //    room.roomWalls.Remove(setLocation);
+                //    Destroy(destroyWall);
+                //}
             }
 
-            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, this.firstRoom.transform);
+            RoomDoor newDoor = Instantiate(Instance?.roomDoorPrefab, room.transform);
             newDoor.transform.position = setLocation;
             newDoor.transform.position += new Vector3(0, 0, -5);
             newDoor.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
-            newDoor.connectedRooms.Add(doorLocation, this.firstRoom);
+            newDoor.connectedRooms.Add(doorLocation, room);
             newDoor.connectedRooms.Add(doorLocation + direction, null);
-            this.firstRoom.roomDoors.Add(setLocation, newDoor);
+            room.roomDoors.Add(setLocation, newDoor);
         }
     }
 
@@ -214,19 +269,21 @@ public class RoomGenerator : MonoBehaviour
     {
         if (room == null)
         {
-            UnityEngine.Debug.LogError("Given room is null!");
+            Debug.LogError("Given room is null!");
             return;
         }
 
         if (Instance == null || Instance.baseRoomPrefab == null)
         {
-            UnityEngine.Debug.LogError("Instance or room prefab is null!");
+            Debug.LogError("Instance or room prefab is null!");
             return;
         }
 
+        // Enumerate through the room's doors
         foreach (KeyValuePair<Vector2, RoomDoor> kvp in room.roomDoors)
         {
             Vector2 doorExit = room.GetDoorExit(kvp.Value);
+            // If there's already a room on the other side of the door, skip and add that room to the door's info
             if (roomLocations.ContainsKey(doorExit) && doorExit != Vector2.zero)
             {
                 BaseRoom exitRoom = roomLocations[doorExit];
@@ -253,11 +310,12 @@ public class RoomGenerator : MonoBehaviour
     {
         if (door == null || connectedRoom == null)
         {
-            UnityEngine.Debug.LogError("Given door or room is null!");
+            Debug.LogError("Given door or room is null!");
             return;
         }
 
         Vector2 doorExit = connectedRoom.GetDoorExit(door);
+        // Get the first tile locations to start the recursive operation
         List<Vector2> firstTileLocations = GetOpenNeighboringTiles(doorExit);
 
         List<Vector2> roomTiles = new List<Vector2>
@@ -267,6 +325,7 @@ public class RoomGenerator : MonoBehaviour
 
         UnityEngine.Random.InitState((int)DateTime.UtcNow.Ticks);
 
+        // Loop through the first locations and start creating tiles
         foreach (Vector2 pos in firstTileLocations)
         {
             float cumulativeChance = Instance.additionalTileChance;
@@ -274,9 +333,11 @@ public class RoomGenerator : MonoBehaviour
             roomTiles = RandomRoomLayoutRecursive(roomTiles, cumulativeChance, pos);
         }
 
+        // When all room tiles have been found, instantiate the object
         BaseRoom newRoom = Instantiate(Instance?.baseRoomPrefab);
 
         newRoom.roomLocations = roomTiles;
+        // Initialize the room after instantiation
         newRoom.InitRoom(door);
 
         door.connectedRooms[doorExit] = newRoom;
