@@ -38,6 +38,11 @@ public class BaseRoom : MonoBehaviour
 
         List<Vector2> directions = new List<Vector2>();
 
+        if (RoomGenerator.Instance?.doorAmountPerRoom > 3)
+        {
+            throw new ArgumentOutOfRangeException("Door count higher than 3 will break things!");
+        }
+
         for (int i = 0; i < RoomGenerator.Instance?.doorAmountPerRoom; ++i)
         {
             int randomNumber = UnityEngine.Random.Range(0, possibleDirections.Count);
@@ -63,14 +68,6 @@ public class BaseRoom : MonoBehaviour
             {
                 // Disabled creating new doors to old rooms for now
                 continue;
-
-                //BaseRoom room = RoomGenerator.roomLocations[doorLocation + direction];
-                //if (room.roomWalls.ContainsKey(setLocation))
-                //{
-                //    GameObject destroyWall = room.roomWalls[setLocation];
-                //    room.roomWalls.Remove(setLocation);
-                //    Destroy(destroyWall);
-                //}
             }
 
             RoomDoor newDoor = Instantiate(RoomGenerator.Instance?.roomDoorPrefab, this.transform);
@@ -85,24 +82,18 @@ public class BaseRoom : MonoBehaviour
 
     private void CreateWalls()
     {
-        List<Vector2> doorExits = GetDoorExits();
         foreach (Vector2 tile in this.roomLocations)
         {
-            List<Vector2> neighboringTiles = RoomGenerator.GetNeighboringTiles(tile);
+            List<Vector2> neighboringTiles = RoomGenerator.GetNeighboringTilesNotInRoom(tile, this);
 
             for (int i = 0; i < neighboringTiles.Count; ++i)
             {
                 Vector2 neighboringTile = neighboringTiles[i];
 
-                if (this.roomLocations.Contains(neighboringTile))
-                {
-                    continue;
-                }
-
                 Vector2 direction = neighboringTile - tile;
-                Vector2 setLocation = tile + (direction * 0.5f);
+                Vector2 doorLocation = tile + direction * 0.5f;
 
-                if (this.roomDoors.ContainsKey(setLocation))
+                if (this.roomDoors.ContainsKey(doorLocation))
                 {
                     continue;
                 }
@@ -111,10 +102,10 @@ public class BaseRoom : MonoBehaviour
                 {
                     BaseRoom neighboringRoom = RoomGenerator.roomLocations[neighboringTile];
    
-                    if (neighboringRoom.roomDoors.ContainsKey(setLocation))
+                    if (neighboringRoom.roomDoors.ContainsKey(doorLocation))
                     {
-                        RoomDoor neighborDoor = neighboringRoom.roomDoors[setLocation];
-                        this.roomDoors.Add(setLocation, neighborDoor);
+                        RoomDoor neighborDoor = neighboringRoom.roomDoors[doorLocation];
+                        this.roomDoors.Add(doorLocation, neighborDoor);
 
                         continue;
                     }
@@ -125,11 +116,11 @@ public class BaseRoom : MonoBehaviour
 
                 // Rotate and position the wall
                 obj.transform.rotation = Quaternion.Euler(0, 0, (direction.y != 0 ? 90 : 0));
-                obj.transform.position = setLocation;
+                obj.transform.position = doorLocation;
                 // Adjust to player position
                 obj.transform.position += new Vector3(0, 0, -5);
 
-                this.roomWalls.Add(setLocation, obj);
+                this.roomWalls.Add(doorLocation, obj);
             }
         }
     }
@@ -246,5 +237,18 @@ public class BaseRoom : MonoBehaviour
         }
 
         return shortestDistance;
+    }
+
+    internal bool IsNeighboringRoomToPlayer()
+    {
+        foreach (KeyValuePair<Vector2, RoomDoor> kvp in this.roomDoors)
+        {
+            if (kvp.Value.connectedRooms.ContainsValue(PlayerController.Instance.currentRoom.Value))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

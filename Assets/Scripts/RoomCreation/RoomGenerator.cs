@@ -12,6 +12,7 @@ public class RoomGenerator : MonoBehaviour
     internal static Dictionary<Vector2, BaseRoom> roomLocations = new Dictionary<Vector2, BaseRoom>();
 
     public float additionalTileChance = 0.5f;
+    [Range(1, 3)]
     public int doorAmountPerRoom = 2;
     public float roomDespawnDistance = 10;
 
@@ -47,7 +48,8 @@ public class RoomGenerator : MonoBehaviour
         Dictionary<Guid, BaseRoom> despawnRooms = new Dictionary<Guid, BaseRoom>();
         foreach (KeyValuePair<Guid, BaseRoom> kvp in roomDictionary)
         {
-            if (kvp.Value.GetDistanceToPlayer() > this.roomDespawnDistance)
+            // Don't destroy neighboring rooms regardless of distance to avoid player getting out of bounds
+            if (kvp.Value.GetDistanceToPlayer() > this.roomDespawnDistance && !kvp.Value.IsNeighboringRoomToPlayer())
             {
                 despawnRooms.Add(kvp.Key, kvp.Value);
             }
@@ -338,9 +340,8 @@ public class RoomGenerator : MonoBehaviour
 
         newRoom.roomLocations = roomTiles;
         // Initialize the room after instantiation
-        newRoom.InitRoom(door);
-
         door.connectedRooms[doorExit] = newRoom;
+        newRoom.InitRoom(door);
 
         PlaceRoom(newRoom);
     }
@@ -415,6 +416,34 @@ public class RoomGenerator : MonoBehaviour
             center + Vector2.left,
             center + Vector2.right
         };
+
+        return tileLocations;
+    }
+
+    internal static List<Vector2> GetNeighboringTilesNotInRoom(Vector2 center, BaseRoom room)
+    {
+        Vector2 up = center + Vector2.up;
+        Vector2 down = center + Vector2.down;
+        Vector2 left = center + Vector2.left;
+        Vector2 right = center + Vector2.right;
+        List<Vector2> tileLocations = new List<Vector2>();
+
+        if (!room.roomLocations.Contains(up))
+        {
+            tileLocations.Add(up);
+        }
+        if (!room.roomLocations.Contains(down))
+        {
+            tileLocations.Add(down);
+        }
+        if (!room.roomLocations.Contains(left))
+        {
+            tileLocations.Add(left);
+        }
+        if (!room.roomLocations.Contains(right))
+        {
+            tileLocations.Add(right);
+        }
 
         return tileLocations;
     }

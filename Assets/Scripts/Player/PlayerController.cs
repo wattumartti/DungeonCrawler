@@ -5,9 +5,14 @@ using UniRx;
 
 public class PlayerController : MonoBehaviour
 {
-    public CharacterController characterController = null;
+    //public CharacterController characterController = null;
+    public Rigidbody2D playerRigidbody = null;
+    public float speed = default;
 
     private static Vector3 _playerPosition = Vector3.zero;
+    private EquipmentManager _equipmentManager = null;
+
+    internal static PlayerController Instance = null;
 
     internal static Vector2 PlayerPosition
     {
@@ -22,28 +27,40 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
+
         Cursor.lockState = CursorLockMode.Confined;
 
         this.currentRoom.Subscribe(x => RoomGenerator.CreateConnectedRooms(x));
+
+        this._equipmentManager = this.GetComponent<EquipmentManager>();
     }
 
-    void Update()
+    private void FixedUpdate()
     {
         // Translation
-        Vector2 translation = GetInputTranslationDirection() * Time.deltaTime;
+        Vector2 translation = GetInputTranslationDirection() * Time.deltaTime * speed;
 
         // Speed up movement when shift key held
         if (Input.GetKey(KeyCode.LeftShift))
         {
-            translation *= 10.0f;
+            translation *= 5.0f;
         }
 
         if (translation != Vector2.zero)
         {
             Translate(translation);
         }
+    }
 
+    void Update()
+    {
         SetPositionAndRoom();
+
+        if (Input.GetButtonDown("Fire1"))
+        {
+            ShootWeapon();
+        }
     }
 
     private void SetPositionAndRoom()
@@ -60,13 +77,14 @@ public class PlayerController : MonoBehaviour
 
         if (room != this.currentRoom.Value)
         {
-            this.currentRoom.Value = room;
+            this.currentRoom.Value = RoomGenerator.roomLocations[PlayerPosition];
         }
     }
 
     public void Translate(Vector2 translation)
     {
-        this.characterController?.Move(translation);
+        this.playerRigidbody.MovePosition((Vector2)transform.position + translation);
+        //this.characterController?.Move(translation);
     }
 
     Vector3 GetInputTranslationDirection()
@@ -90,5 +108,16 @@ public class PlayerController : MonoBehaviour
         }
 
         return direction;
+    }
+
+    private void ShootWeapon()
+    {
+        if (this._equipmentManager == null || this._equipmentManager.currentWeapon == null)
+        {
+            Debug.LogError("EquipmentManager or current weapon is null!");
+            return;
+        }
+
+        this._equipmentManager.currentWeapon.Shoot();
     }
 }

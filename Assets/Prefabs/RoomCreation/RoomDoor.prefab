@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4431437543353791212}
   - component: {fileID: 2804442544898216450}
   - component: {fileID: 6917509932649862736}
+  - component: {fileID: 8202191339604347420}
   m_Layer: 0
   m_Name: RoomDoor
   m_TagString: Untagged
@@ -92,3 +93,16 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!65 &8202191339604347420
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5989302983938530720}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.13, y: 1, z: 0.2}
+  m_Center: {x: 0, y: 0, z: 0}

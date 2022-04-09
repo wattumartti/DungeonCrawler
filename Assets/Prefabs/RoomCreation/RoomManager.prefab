@@ -43,8 +43,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d9e4f2491cdafd43a4c6b6e6547df8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  additionalTileChance: 0.95
+  additionalTileChance: 0.999
   doorAmountPerRoom: 2
+  roomDespawnDistance: 15
   baseRoomPrefab: {fileID: 4197149348493270643, guid: f66b6a1f0ddaab24e9a4c5ac4fc57e24,
     type: 3}
   firstRoom: {fileID: 0}

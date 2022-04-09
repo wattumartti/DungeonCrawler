@@ -15,23 +15,83 @@
 				{
 					"typeStr": "3",
 					"name": "Health"
+				},
+				{
+					"typeStr": "0",
+					"name": "UID"
 				}
 			],
 			"lines": [
 				{
 					"EnemyName": "Enemy",
 					"Health": 10,
-					"id": "TestEnemy"
+					"id": "TestEnemy",
+					"UID": "TEST"
 				},
 				{
 					"id": "Enemy2",
 					"EnemyName": "Waoooow",
-					"Health": 2
+					"Health": 2,
+					"UID": "ENEMY2"
 				},
 				{
 					"id": "Enemy3",
 					"EnemyName": "jgejegij",
-					"Health": 5
+					"Health": 5,
+					"UID": "ENEMY3"
+				}
+			],
+			"separators": [],
+			"props": {}
+		},
+		{
+			"name": "Weapons",
+			"columns": [
+				{
+					"typeStr": "1",
+					"name": "id"
+				},
+				{
+					"typeStr": "3",
+					"name": "damage",
+					"display": null
+				},
+				{
+					"typeStr": "3",
+					"name": "clip_size",
+					"display": null
+				},
+				{
+					"typeStr": "4",
+					"name": "spread",
+					"opt": true,
+					"display": null
+				},
+				{
+					"typeStr": "3",
+					"name": "bullet_count",
+					"display": null
+				},
+				{
+					"typeStr": "0",
+					"name": "UID",
+					"display": null
+				}
+			],
+			"lines": [
+				{
+					"id": "PISTOL",
+					"damage": 10,
+					"clip_size": 6,
+					"bullet_count": 1,
+					"UID": "PISTOL"
+				},
+				{
+					"id": "SHOTGUN",
+					"damage": 5,
+					"clip_size": 8,
+					"bullet_count": 10,
+					"UID": "SHOTGUN"
 				}
 			],
 			"separators": [],

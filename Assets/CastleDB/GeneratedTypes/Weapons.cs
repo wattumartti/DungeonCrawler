@@ -6,29 +6,32 @@ using SimpleJSON;
 using CastleDBImporter;
 namespace CastleDBTypes
 { 
-    public class Enemies
+    public class Weapons
     {
         public string id;
-public string EnemyName;
-public int Health;
+public int damage;
+public int clip_size;
+public float spread;
+public int bullet_count;
 public string UID;
 
         public enum RowValues { 
-TestEnemy, 
-Enemy2, 
-Enemy3
+PISTOL, 
+SHOTGUN
  } 
-        public Enemies (CastleDBParser.RootNode root, RowValues line) 
+        public Weapons (CastleDBParser.RootNode root, RowValues line) 
         {
-            SimpleJSON.JSONNode node = root.GetSheetWithName("Enemies").Rows[(int)line];
+            SimpleJSON.JSONNode node = root.GetSheetWithName("Weapons").Rows[(int)line];
 id = node["id"];
-EnemyName = node["EnemyName"];
-Health = node["Health"].AsInt;
+damage = node["damage"].AsInt;
+clip_size = node["clip_size"].AsInt;
+spread = node["spread"].AsFloat;
+bullet_count = node["bullet_count"].AsInt;
 UID = node["UID"];
 
         }  
         
-public static Enemies.RowValues GetRowValue(string name)
+public static Weapons.RowValues GetRowValue(string name)
 {
     var values = (RowValues[])Enum.GetValues(typeof(RowValues));
     for (int i = 0; i < values.Length; i++)
